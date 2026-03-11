@@ -3,8 +3,8 @@ import { getOverallConfidence, getExtractionStatus } from "@/types/invoice";
 import StatusBanner from "./StatusBanner";
 import FieldCard from "./FieldCard";
 import ConfidenceBadge from "./ConfidenceBadge";
-import { Copy, Check } from "lucide-react";
-import { useState, useCallback } from "react";
+import { Copy, Check, Columns2, LayoutList } from "lucide-react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 
 function useCopy() {
@@ -20,12 +20,24 @@ function useCopy() {
 interface InvoiceDashboardProps {
   data: InvoiceData;
   fileName?: string;
+  file?: File | null;
   onReset: () => void;
 }
 
-const InvoiceDashboard = ({ data, fileName, onReset }: InvoiceDashboardProps) => {
+const InvoiceDashboard = ({ data, fileName, file, onReset }: InvoiceDashboardProps) => {
   const [showConfidence, setShowConfidence] = useState(false);
+  const [splitView, setSplitView] = useState(false);
   const { copied: pageCopied, copy: copyPage } = useCopy();
+  const blobUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (file) {
+      blobUrlRef.current = URL.createObjectURL(file);
+    }
+    return () => {
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+    };
+  }, [file]);
   const overall = getOverallConfidence(data);
 
   const subtotal = parseFloat(data.subtotal_inr.value) || 0;
@@ -35,26 +47,8 @@ const InvoiceDashboard = ({ data, fileName, onReset }: InvoiceDashboardProps) =>
   const effectiveConfidence = !mathValid ? Math.min(overall, 89) : overall;
   const status = getExtractionStatus(effectiveConfidence);
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="flex justify-between items-start mb-4">
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Extraction Results</h2>
-          {fileName && (
-            <p className="text-xs text-muted-foreground mt-0.5">{fileName}</p>
-          )}
-        </div>
-        <button
-          onClick={() => copyPage(JSON.stringify(data, null, 2))}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          title="Copy full extraction as JSON"
-        >
-          {pageCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-          {pageCopied ? "Copied!" : "Copy all as JSON"}
-        </button>
-      </div>
-
+  const resultsPanel = (
+    <div>
       <StatusBanner
         status={status}
         confidence={overall}
@@ -62,7 +56,6 @@ const InvoiceDashboard = ({ data, fileName, onReset }: InvoiceDashboardProps) =>
         onToggleConfidence={() => setShowConfidence(!showConfidence)}
       />
 
-      {/* Upload another — top */}
       <div className="mt-4 mb-2">
         <Button onClick={onReset} variant="outline" className="border-accent text-accent hover:bg-accent hover:text-accent-foreground">
           ↑ Upload another invoice
@@ -71,7 +64,7 @@ const InvoiceDashboard = ({ data, fileName, onReset }: InvoiceDashboardProps) =>
 
       {/* Invoice Header */}
       <Section title="Invoice Header" copyData={{ invoice_number: data.invoice_number, invoice_date: data.invoice_date, invoice_type: data.invoice_type, due_date: data.due_date, payment_terms: data.payment_terms, carrier_name: data.carrier_name, carrier_gstin: data.carrier_gstin, shipment_number: data.shipment_number }}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FieldCard label="Invoice Number" field={data.invoice_number} showConfidence={showConfidence} />
           <FieldCard label="Invoice Date" field={data.invoice_date} showConfidence={showConfidence} />
           <FieldCard label="Invoice Type" field={data.invoice_type} showConfidence={showConfidence} />
@@ -83,24 +76,18 @@ const InvoiceDashboard = ({ data, fileName, onReset }: InvoiceDashboardProps) =>
         </div>
       </Section>
 
-      {/* Parties */}
       <Section title="Parties" copyData={{ customer_name: data.customer_name, customer_gstin: data.customer_gstin, customer_pan: data.customer_pan, shipper: data.shipper, consignee: data.consignee }}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <FieldCard label="Customer Name" field={data.customer_name} showConfidence={showConfidence} />
-            <FieldCard label="Customer GSTIN" field={data.customer_gstin} showConfidence={showConfidence} />
-            <FieldCard label="Customer PAN" field={data.customer_pan} showConfidence={showConfidence} />
-          </div>
-          <div className="space-y-3">
-            <FieldCard label="Shipper" field={data.shipper} showConfidence={showConfidence} />
-            <FieldCard label="Consignee" field={data.consignee} showConfidence={showConfidence} />
-          </div>
+        <div className="space-y-3">
+          <FieldCard label="Customer Name" field={data.customer_name} showConfidence={showConfidence} />
+          <FieldCard label="Customer GSTIN" field={data.customer_gstin} showConfidence={showConfidence} />
+          <FieldCard label="Customer PAN" field={data.customer_pan} showConfidence={showConfidence} />
+          <FieldCard label="Shipper" field={data.shipper} showConfidence={showConfidence} />
+          <FieldCard label="Consignee" field={data.consignee} showConfidence={showConfidence} />
         </div>
       </Section>
 
-      {/* Shipment Details */}
       <Section title="Shipment Details" copyData={{ origin: data.origin, destination: data.destination, etd: data.etd, eta: data.eta, ocean_bill_of_lading: data.ocean_bill_of_lading, house_bill_of_lading: data.house_bill_of_lading, goods_description: data.goods_description, weight_kg: data.weight_kg, volume_m3: data.volume_m3, container_numbers: data.container_numbers }}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FieldCard label="Origin" field={data.origin} showConfidence={showConfidence} />
           <FieldCard label="Destination" field={data.destination} showConfidence={showConfidence} />
           <FieldCard label="ETD" field={data.etd} showConfidence={showConfidence} />
@@ -114,63 +101,32 @@ const InvoiceDashboard = ({ data, fileName, onReset }: InvoiceDashboardProps) =>
         </div>
       </Section>
 
-      {/* Charge Line Items */}
       <Section title="Charge Line Items" copyData={{ charge_line_items: data.charge_line_items }}>
         {data.charge_line_items.length === 0 ? (
           <p className="text-sm text-muted-foreground italic py-4">No charge line items found in this invoice.</p>
         ) : (
           <div className="overflow-x-auto rounded border border-border">
             <p className="text-xs text-muted-foreground px-3 pt-2 pb-1">← Scroll to see all columns</p>
-            <table className="w-full text-sm min-w-[640px]">
+            <table className="w-full text-sm min-w-[580px]">
               <thead>
                 <tr className="border-b border-border text-left bg-secondary">
                   <th className="py-2 px-3 text-muted-foreground font-medium">Description</th>
-                  <th className="py-2 px-3 text-muted-foreground font-medium">Amount USD</th>
-                  <th className="py-2 px-3 text-muted-foreground font-medium">Exchange Rate</th>
-                  <th className="py-2 px-3 text-muted-foreground font-medium">Amount INR</th>
-                  <th className="py-2 px-3 text-muted-foreground font-medium">Tax Type</th>
-                  <th className="py-2 px-3 text-muted-foreground font-medium">Tax Rate</th>
+                  <th className="py-2 px-3 text-muted-foreground font-medium">USD</th>
+                  <th className="py-2 px-3 text-muted-foreground font-medium">Rate</th>
+                  <th className="py-2 px-3 text-muted-foreground font-medium">INR</th>
+                  <th className="py-2 px-3 text-muted-foreground font-medium">Tax</th>
+                  <th className="py-2 px-3 text-muted-foreground font-medium">Rate</th>
                 </tr>
               </thead>
               <tbody>
                 {data.charge_line_items.map((item, i) => (
                   <tr key={i} className="border-b border-border/50 hover:bg-secondary/50">
-                    <td className="py-2 px-3">
-                      <div className="flex items-center gap-1.5">
-                        {item.description.value || <span className="text-xs text-muted-foreground italic">—</span>}
-                        {showConfidence && <ConfidenceBadge confidence={item.description.confidence} />}
-                      </div>
-                    </td>
-                    <td className="py-2 px-3">
-                      <div className="flex items-center gap-1.5">
-                        {item.amount_usd.value || <span className="text-xs text-muted-foreground italic">—</span>}
-                        {showConfidence && <ConfidenceBadge confidence={item.amount_usd.confidence} />}
-                      </div>
-                    </td>
-                    <td className="py-2 px-3">
-                      <div className="flex items-center gap-1.5">
-                        {item.exchange_rate.value || <span className="text-xs text-muted-foreground italic">—</span>}
-                        {showConfidence && <ConfidenceBadge confidence={item.exchange_rate.confidence} />}
-                      </div>
-                    </td>
-                    <td className="py-2 px-3">
-                      <div className="flex items-center gap-1.5">
-                        {item.amount_inr.value || <span className="text-xs text-muted-foreground italic">—</span>}
-                        {showConfidence && <ConfidenceBadge confidence={item.amount_inr.confidence} />}
-                      </div>
-                    </td>
-                    <td className="py-2 px-3">
-                      <div className="flex items-center gap-1.5">
-                        {item.tax_type.value || <span className="text-xs text-muted-foreground italic">—</span>}
-                        {showConfidence && <ConfidenceBadge confidence={item.tax_type.confidence} />}
-                      </div>
-                    </td>
-                    <td className="py-2 px-3">
-                      <div className="flex items-center gap-1.5">
-                        {item.tax_rate.value || <span className="text-xs text-muted-foreground italic">—</span>}
-                        {showConfidence && <ConfidenceBadge confidence={item.tax_rate.confidence} />}
-                      </div>
-                    </td>
+                    <td className="py-2 px-3">{item.description.value || <span className="text-xs text-muted-foreground italic">—</span>}{showConfidence && <ConfidenceBadge confidence={item.description.confidence} />}</td>
+                    <td className="py-2 px-3">{item.amount_usd.value || "—"}{showConfidence && <ConfidenceBadge confidence={item.amount_usd.confidence} />}</td>
+                    <td className="py-2 px-3">{item.exchange_rate.value || "—"}{showConfidence && <ConfidenceBadge confidence={item.exchange_rate.confidence} />}</td>
+                    <td className="py-2 px-3">{item.amount_inr.value || "—"}{showConfidence && <ConfidenceBadge confidence={item.amount_inr.confidence} />}</td>
+                    <td className="py-2 px-3">{item.tax_type.value || "—"}{showConfidence && <ConfidenceBadge confidence={item.tax_type.confidence} />}</td>
+                    <td className="py-2 px-3">{item.tax_rate.value || "—"}{showConfidence && <ConfidenceBadge confidence={item.tax_rate.confidence} />}</td>
                   </tr>
                 ))}
               </tbody>
@@ -179,7 +135,6 @@ const InvoiceDashboard = ({ data, fileName, onReset }: InvoiceDashboardProps) =>
         )}
       </Section>
 
-      {/* Totals */}
       <div className="grid grid-cols-3 gap-3 mt-6">
         {[
           { label: "Subtotal INR", value: data.subtotal_inr.value },
@@ -193,12 +148,60 @@ const InvoiceDashboard = ({ data, fileName, onReset }: InvoiceDashboardProps) =>
         ))}
       </div>
 
-      {/* Upload another — bottom */}
       <div className="mt-10 pt-6 border-t border-border flex justify-center">
         <Button onClick={onReset} variant="outline" className="border-accent text-accent hover:bg-accent hover:text-accent-foreground px-8">
           ↑ Upload another invoice
         </Button>
       </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      {/* Header — always full width */}
+      <div className="max-w-7xl mx-auto w-full px-4 pt-8 pb-4">
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Extraction Results</h2>
+            {fileName && <p className="text-xs text-muted-foreground mt-0.5">{fileName}</p>}
+          </div>
+          <div className="flex items-center gap-3">
+            {file && (
+              <button
+                onClick={() => setSplitView(!splitView)}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                title="Toggle split view"
+              >
+                {splitView ? <LayoutList className="w-4 h-4" /> : <Columns2 className="w-4 h-4" />}
+                {splitView ? "Full view" : "Split view"}
+              </button>
+            )}
+            <button
+              onClick={() => copyPage(JSON.stringify(data, null, 2))}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {pageCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+              {pageCopied ? "Copied!" : "Copy all as JSON"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Body — split or full */}
+      {splitView && blobUrlRef.current ? (
+        <div className="flex flex-1 overflow-hidden" style={{ height: "calc(100vh - 80px)" }}>
+          <div className="w-1/2 border-r border-border">
+            <iframe src={blobUrlRef.current} className="w-full h-full" title="Invoice PDF" />
+          </div>
+          <div className="w-1/2 overflow-y-auto px-4 py-2">
+            {resultsPanel}
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto w-full px-4 pb-8">
+          {resultsPanel}
+        </div>
+      )}
     </div>
   );
 };
