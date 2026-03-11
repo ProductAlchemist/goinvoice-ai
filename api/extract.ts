@@ -32,7 +32,7 @@ Fields to extract:
 If a field is not found, set value to "" and confidence to 0.
 Return ONLY valid JSON, no markdown fences.`;
 
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
   const geminiRes = await fetch(geminiUrl, {
     method: "POST",
