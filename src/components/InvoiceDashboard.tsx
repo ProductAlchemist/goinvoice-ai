@@ -3,8 +3,18 @@ import { getOverallConfidence, getExtractionStatus } from "@/types/invoice";
 import StatusBanner from "./StatusBanner";
 import FieldCard from "./FieldCard";
 import ConfidenceBadge from "./ConfidenceBadge";
-import { CheckCircle, XCircle, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { CheckCircle, XCircle, ChevronDown, Copy, Check } from "lucide-react";
+import { useState, useCallback } from "react";
+
+function useCopy() {
+  const [copied, setCopied] = useState(false);
+  const copy = useCallback((text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }, []);
+  return { copied, copy };
+}
 
 interface InvoiceDashboardProps {
   data: InvoiceData;
@@ -13,6 +23,7 @@ interface InvoiceDashboardProps {
 
 const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
   const [limOpen, setLimOpen] = useState(false);
+  const { copied: pageCopied, copy: copyPage } = useCopy();
   const overall = getOverallConfidence(data);
   const status = getExtractionStatus(overall);
 
@@ -25,15 +36,25 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-foreground">Extraction Results</h2>
-        <button onClick={onReset} className="text-sm text-accent hover:underline font-medium">
-          ← Upload another
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => copyPage(JSON.stringify(data, null, 2))}
+            className="flex items-center gap-1.5 text-sm text-accent hover:underline font-medium"
+            title="Copy full extraction as JSON"
+          >
+            {pageCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+            {pageCopied ? "Copied!" : "Copy all as JSON"}
+          </button>
+          <button onClick={onReset} className="text-sm text-accent hover:underline font-medium">
+            ← Upload another
+          </button>
+        </div>
       </div>
 
       <StatusBanner status={status} confidence={overall} />
 
       {/* Invoice Header */}
-      <Section title="Invoice Header">
+      <Section title="Invoice Header" copyData={{ invoice_number: data.invoice_number, invoice_date: data.invoice_date, invoice_type: data.invoice_type, due_date: data.due_date, payment_terms: data.payment_terms, carrier_name: data.carrier_name, carrier_gstin: data.carrier_gstin, shipment_number: data.shipment_number }}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <FieldCard label="Invoice Number" field={data.invoice_number} />
           <FieldCard label="Invoice Date" field={data.invoice_date} />
@@ -47,7 +68,7 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
       </Section>
 
       {/* Parties */}
-      <Section title="Parties">
+      <Section title="Parties" copyData={{ customer_name: data.customer_name, customer_gstin: data.customer_gstin, customer_pan: data.customer_pan, shipper: data.shipper, consignee: data.consignee }}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-3">
             <FieldCard label="Customer Name" field={data.customer_name} />
@@ -62,7 +83,7 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
       </Section>
 
       {/* Shipment Details */}
-      <Section title="Shipment Details">
+      <Section title="Shipment Details" copyData={{ origin: data.origin, destination: data.destination, etd: data.etd, eta: data.eta, ocean_bill_of_lading: data.ocean_bill_of_lading, house_bill_of_lading: data.house_bill_of_lading, goods_description: data.goods_description, weight_kg: data.weight_kg, volume_m3: data.volume_m3, container_numbers: data.container_numbers }}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <FieldCard label="Origin" field={data.origin} />
           <FieldCard label="Destination" field={data.destination} />
@@ -78,7 +99,7 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
       </Section>
 
       {/* Charge Line Items */}
-      <Section title="Charge Line Items">
+      <Section title="Charge Line Items" copyData={{ charge_line_items: data.charge_line_items }}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -188,11 +209,26 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
   );
 };
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="mt-6">
-    <h3 className="text-base font-semibold text-foreground mb-3 border-b border-border pb-2">{title}</h3>
-    {children}
-  </div>
-);
+const Section = ({ title, children, copyData }: { title: string; children: React.ReactNode; copyData?: object }) => {
+  const { copied, copy } = useCopy();
+  return (
+    <div className="mt-6">
+      <div className="flex items-center justify-between border-b border-border pb-2 mb-3">
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+        {copyData && (
+          <button
+            onClick={() => copy(JSON.stringify(copyData, null, 2))}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            title={`Copy ${title} as JSON`}
+          >
+            {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+            {copied ? "Copied!" : "Copy section"}
+          </button>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+};
 
 export default InvoiceDashboard;
