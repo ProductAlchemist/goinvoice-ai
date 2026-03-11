@@ -14,27 +14,29 @@ const STAGES = [
   { at: 85, message: "Almost done…" },
 ];
 
-const SailingAnimation = ({ message }: { message: string }) => (
+const SailingAnimation = ({ message, progress }: { message: string; progress: number }) => (
   <div className="mt-10 space-y-4">
     <div className="relative w-full h-32 overflow-hidden rounded-xl select-none">
       <style>{`
-        @keyframes sail {
-          0%   { left: -160px; }
-          100% { left: calc(100% + 160px); }
-        }
         @keyframes wave-sail {
           0%   { transform: translateX(0); }
           100% { transform: translateX(-50%); }
         }
-        .ship-sailing { animation: sail 6s linear infinite; position: absolute; bottom: 20px; }
-        .wave-sailing  { animation: wave-sail 3s linear infinite; }
+        .wave-sailing { animation: wave-sail 3s linear infinite; }
       `}</style>
 
       {/* Sky */}
       <div className="absolute inset-0 bg-gradient-to-b from-sky-100 to-blue-200" />
 
-      {/* Sailing ship */}
-      <div className="ship-sailing">
+      {/* Ship — position tied to progress */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 20,
+          left: `calc(${progress}% - 38px)`,
+          transition: "left 0.5s ease-out",
+        }}
+      >
         <div style={{ display: "flex", gap: 2, marginBottom: 2, justifyContent: "center" }}>
           <div style={{ width: 20, height: 11, background: "#f87171", borderRadius: 2, border: "1px solid #ef4444" }} />
           <div style={{ width: 20, height: 11, background: "#3b82f6", borderRadius: 2, border: "1px solid #2563eb" }} />
@@ -67,25 +69,29 @@ const SailingAnimation = ({ message }: { message: string }) => (
 const Index = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [progressMsg, setProgressMsg] = useState("");
   const [result, setResult] = useState<InvoiceData | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const progressRef = useRef(0);
 
   useEffect(() => {
     if (isLoading) {
-      progressRef.current = 0;
+      setProgress(0);
       setProgressMsg(STAGES[0].message);
       intervalRef.current = setInterval(() => {
-        const prev = progressRef.current;
-        const next = Math.min(prev + (prev < 30 ? 3 : prev < 60 ? 2 : prev < 85 ? 1 : 0.3), 92);
-        progressRef.current = next;
-        const stage = [...STAGES].reverse().find((s) => next >= s.at);
-        if (stage) setProgressMsg(stage.message);
+        setProgress((prev) => {
+          const next = Math.min(prev + (prev < 30 ? 3 : prev < 60 ? 2 : prev < 85 ? 1 : 0.3), 92);
+          const stage = [...STAGES].reverse().find((s) => next >= s.at);
+          if (stage) setProgressMsg(stage.message);
+          return next;
+        });
       }, 400);
     } else {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      progressRef.current = 0;
+      if (progress > 0) {
+        setProgress(100);
+        setTimeout(() => setProgress(0), 600);
+      }
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [isLoading]);
@@ -121,7 +127,7 @@ const Index = () => {
       ) : (
         <div className="max-w-2xl mx-auto px-4">
           {isLoading ? (
-            <SailingAnimation message={progressMsg} />
+            <SailingAnimation message={progressMsg} progress={progress} />
           ) : (
             <UploadArea
               onFileSelected={setFile}
