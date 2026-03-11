@@ -3,8 +3,9 @@ import { getOverallConfidence, getExtractionStatus } from "@/types/invoice";
 import StatusBanner from "./StatusBanner";
 import FieldCard from "./FieldCard";
 import ConfidenceBadge from "./ConfidenceBadge";
-import { CheckCircle, XCircle, ChevronDown, Copy, Check } from "lucide-react";
+import { CheckCircle, XCircle, ChevronDown, Copy, Check, Eye, EyeOff } from "lucide-react";
 import { useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
 
 function useCopy() {
   const [copied, setCopied] = useState(false);
@@ -23,6 +24,7 @@ interface InvoiceDashboardProps {
 
 const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
   const [limOpen, setLimOpen] = useState(false);
+  const [showConfidence, setShowConfidence] = useState(false);
   const { copied: pageCopied, copy: copyPage } = useCopy();
   const overall = getOverallConfidence(data);
   const status = getExtractionStatus(overall);
@@ -34,36 +36,49 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-foreground">Extraction Results</h2>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowConfidence(!showConfidence)}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            title="Toggle confidence scores"
+          >
+            {showConfidence ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showConfidence ? "Hide confidence" : "Show confidence"}
+          </button>
           <button
             onClick={() => copyPage(JSON.stringify(data, null, 2))}
-            className="flex items-center gap-1.5 text-sm text-accent hover:underline font-medium"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
             title="Copy full extraction as JSON"
           >
             {pageCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
             {pageCopied ? "Copied!" : "Copy all as JSON"}
-          </button>
-          <button onClick={onReset} className="text-sm text-accent hover:underline font-medium">
-            ← Upload another
           </button>
         </div>
       </div>
 
       <StatusBanner status={status} confidence={overall} />
 
+      {/* Upload another — prominent, separated from header actions */}
+      <div className="mt-4 mb-2">
+        <Button onClick={onReset} variant="outline" className="border-accent text-accent hover:bg-accent hover:text-accent-foreground">
+          ↑ Upload another invoice
+        </Button>
+      </div>
+
       {/* Invoice Header */}
       <Section title="Invoice Header" copyData={{ invoice_number: data.invoice_number, invoice_date: data.invoice_date, invoice_type: data.invoice_type, due_date: data.due_date, payment_terms: data.payment_terms, carrier_name: data.carrier_name, carrier_gstin: data.carrier_gstin, shipment_number: data.shipment_number }}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <FieldCard label="Invoice Number" field={data.invoice_number} />
-          <FieldCard label="Invoice Date" field={data.invoice_date} />
-          <FieldCard label="Invoice Type" field={data.invoice_type} />
-          <FieldCard label="Due Date" field={data.due_date} />
-          <FieldCard label="Payment Terms" field={data.payment_terms} />
-          <FieldCard label="Carrier Name" field={data.carrier_name} />
-          <FieldCard label="Carrier GSTIN" field={data.carrier_gstin} />
-          <FieldCard label="Shipment Number" field={data.shipment_number} />
+          <FieldCard label="Invoice Number" field={data.invoice_number} showConfidence={showConfidence} />
+          <FieldCard label="Invoice Date" field={data.invoice_date} showConfidence={showConfidence} />
+          <FieldCard label="Invoice Type" field={data.invoice_type} showConfidence={showConfidence} />
+          <FieldCard label="Due Date" field={data.due_date} showConfidence={showConfidence} />
+          <FieldCard label="Payment Terms" field={data.payment_terms} showConfidence={showConfidence} />
+          <FieldCard label="Carrier Name" field={data.carrier_name} showConfidence={showConfidence} />
+          <FieldCard label="Carrier GSTIN" field={data.carrier_gstin} showConfidence={showConfidence} />
+          <FieldCard label="Shipment Number" field={data.shipment_number} showConfidence={showConfidence} />
         </div>
       </Section>
 
@@ -71,13 +86,13 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
       <Section title="Parties" copyData={{ customer_name: data.customer_name, customer_gstin: data.customer_gstin, customer_pan: data.customer_pan, shipper: data.shipper, consignee: data.consignee }}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-3">
-            <FieldCard label="Customer Name" field={data.customer_name} />
-            <FieldCard label="Customer GSTIN" field={data.customer_gstin} />
-            <FieldCard label="Customer PAN" field={data.customer_pan} />
+            <FieldCard label="Customer Name" field={data.customer_name} showConfidence={showConfidence} />
+            <FieldCard label="Customer GSTIN" field={data.customer_gstin} showConfidence={showConfidence} />
+            <FieldCard label="Customer PAN" field={data.customer_pan} showConfidence={showConfidence} />
           </div>
           <div className="space-y-3">
-            <FieldCard label="Shipper" field={data.shipper} />
-            <FieldCard label="Consignee" field={data.consignee} />
+            <FieldCard label="Shipper" field={data.shipper} showConfidence={showConfidence} />
+            <FieldCard label="Consignee" field={data.consignee} showConfidence={showConfidence} />
           </div>
         </div>
       </Section>
@@ -85,16 +100,16 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
       {/* Shipment Details */}
       <Section title="Shipment Details" copyData={{ origin: data.origin, destination: data.destination, etd: data.etd, eta: data.eta, ocean_bill_of_lading: data.ocean_bill_of_lading, house_bill_of_lading: data.house_bill_of_lading, goods_description: data.goods_description, weight_kg: data.weight_kg, volume_m3: data.volume_m3, container_numbers: data.container_numbers }}>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <FieldCard label="Origin" field={data.origin} />
-          <FieldCard label="Destination" field={data.destination} />
-          <FieldCard label="ETD" field={data.etd} />
-          <FieldCard label="ETA" field={data.eta} />
-          <FieldCard label="Ocean Bill of Lading" field={data.ocean_bill_of_lading} />
-          <FieldCard label="House Bill of Lading" field={data.house_bill_of_lading} />
-          <FieldCard label="Goods Description" field={data.goods_description} />
-          <FieldCard label="Weight (kg)" field={data.weight_kg} />
-          <FieldCard label="Volume (m³)" field={data.volume_m3} />
-          <FieldCard label="Container Numbers" field={data.container_numbers} />
+          <FieldCard label="Origin" field={data.origin} showConfidence={showConfidence} />
+          <FieldCard label="Destination" field={data.destination} showConfidence={showConfidence} />
+          <FieldCard label="ETD" field={data.etd} showConfidence={showConfidence} />
+          <FieldCard label="ETA" field={data.eta} showConfidence={showConfidence} />
+          <FieldCard label="Ocean Bill of Lading" field={data.ocean_bill_of_lading} showConfidence={showConfidence} />
+          <FieldCard label="House Bill of Lading" field={data.house_bill_of_lading} showConfidence={showConfidence} />
+          <FieldCard label="Goods Description" field={data.goods_description} showConfidence={showConfidence} />
+          <FieldCard label="Weight (kg)" field={data.weight_kg} showConfidence={showConfidence} />
+          <FieldCard label="Volume (m³)" field={data.volume_m3} showConfidence={showConfidence} />
+          <FieldCard label="Container Numbers" field={data.container_numbers} showConfidence={showConfidence} />
         </div>
       </Section>
 
@@ -116,22 +131,40 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
               {data.charge_line_items.map((item, i) => (
                 <tr key={i} className="border-b border-border/50">
                   <td className="py-2 pr-4">
-                    <div className="flex items-center gap-1.5">{item.description.value} <ConfidenceBadge confidence={item.description.confidence} /></div>
+                    <div className="flex items-center gap-1.5">
+                      {item.description.value}
+                      {showConfidence && <ConfidenceBadge confidence={item.description.confidence} />}
+                    </div>
                   </td>
                   <td className="py-2 pr-4">
-                    <div className="flex items-center gap-1.5">{item.amount_usd.value} <ConfidenceBadge confidence={item.amount_usd.confidence} /></div>
+                    <div className="flex items-center gap-1.5">
+                      {item.amount_usd.value}
+                      {showConfidence && <ConfidenceBadge confidence={item.amount_usd.confidence} />}
+                    </div>
                   </td>
                   <td className="py-2 pr-4">
-                    <div className="flex items-center gap-1.5">{item.exchange_rate.value} <ConfidenceBadge confidence={item.exchange_rate.confidence} /></div>
+                    <div className="flex items-center gap-1.5">
+                      {item.exchange_rate.value}
+                      {showConfidence && <ConfidenceBadge confidence={item.exchange_rate.confidence} />}
+                    </div>
                   </td>
                   <td className="py-2 pr-4">
-                    <div className="flex items-center gap-1.5">{item.amount_inr.value} <ConfidenceBadge confidence={item.amount_inr.confidence} /></div>
+                    <div className="flex items-center gap-1.5">
+                      {item.amount_inr.value}
+                      {showConfidence && <ConfidenceBadge confidence={item.amount_inr.confidence} />}
+                    </div>
                   </td>
                   <td className="py-2 pr-4">
-                    <div className="flex items-center gap-1.5">{item.tax_type.value} <ConfidenceBadge confidence={item.tax_type.confidence} /></div>
+                    <div className="flex items-center gap-1.5">
+                      {item.tax_type.value}
+                      {showConfidence && <ConfidenceBadge confidence={item.tax_type.confidence} />}
+                    </div>
                   </td>
                   <td className="py-2">
-                    <div className="flex items-center gap-1.5">{item.tax_rate.value} <ConfidenceBadge confidence={item.tax_rate.confidence} /></div>
+                    <div className="flex items-center gap-1.5">
+                      {item.tax_rate.value}
+                      {showConfidence && <ConfidenceBadge confidence={item.tax_rate.confidence} />}
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -6,9 +6,10 @@ import type { FieldWithConfidence } from "@/types/invoice";
 interface FieldCardProps {
   label: string;
   field: FieldWithConfidence;
+  showConfidence?: boolean;
 }
 
-const FieldCard = ({ label, field }: FieldCardProps) => {
+const FieldCard = ({ label, field, showConfidence = false }: FieldCardProps) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -32,7 +33,7 @@ const FieldCard = ({ label, field }: FieldCardProps) => {
       </div>
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-medium text-foreground truncate">{field.value || "—"}</p>
-        <ConfidenceBadge confidence={field.confidence} />
+        {showConfidence && <ConfidenceBadge confidence={field.confidence} />}
       </div>
     </div>
   );
