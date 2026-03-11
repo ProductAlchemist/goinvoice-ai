@@ -3,7 +3,7 @@ import { getOverallConfidence, getExtractionStatus } from "@/types/invoice";
 import StatusBanner from "./StatusBanner";
 import FieldCard from "./FieldCard";
 import ConfidenceBadge from "./ConfidenceBadge";
-import { ChevronDown, Copy, Check } from "lucide-react";
+import { Copy, Check } from "lucide-react";
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -19,11 +19,11 @@ function useCopy() {
 
 interface InvoiceDashboardProps {
   data: InvoiceData;
+  fileName?: string;
   onReset: () => void;
 }
 
-const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
-  const [limOpen, setLimOpen] = useState(false);
+const InvoiceDashboard = ({ data, fileName, onReset }: InvoiceDashboardProps) => {
   const [showConfidence, setShowConfidence] = useState(false);
   const { copied: pageCopied, copy: copyPage } = useCopy();
   const overall = getOverallConfidence(data);
@@ -32,15 +32,19 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
   const tax = parseFloat(data.total_tax_inr.value) || 0;
   const total = parseFloat(data.total_amount_inr.value) || 0;
   const mathValid = !subtotal || !total || Math.abs(subtotal + tax - total) < 0.01;
-  // Math failure silently pulls status to review minimum
   const effectiveConfidence = !mathValid ? Math.min(overall, 89) : overall;
   const status = getExtractionStatus(effectiveConfidence);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-foreground">Extraction Results</h2>
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Extraction Results</h2>
+          {fileName && (
+            <p className="text-xs text-muted-foreground mt-0.5">{fileName}</p>
+          )}
+        </div>
         <button
           onClick={() => copyPage(JSON.stringify(data, null, 2))}
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -58,7 +62,7 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
         onToggleConfidence={() => setShowConfidence(!showConfidence)}
       />
 
-      {/* Upload another — prominent, separated from header actions */}
+      {/* Upload another — top */}
       <div className="mt-4 mb-2">
         <Button onClick={onReset} variant="outline" className="border-accent text-accent hover:bg-accent hover:text-accent-foreground">
           ↑ Upload another invoice
@@ -112,62 +116,67 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
 
       {/* Charge Line Items */}
       <Section title="Charge Line Items" copyData={{ charge_line_items: data.charge_line_items }}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left">
-                <th className="py-2 pr-4 text-muted-foreground font-medium">Description</th>
-                <th className="py-2 pr-4 text-muted-foreground font-medium">Amount USD</th>
-                <th className="py-2 pr-4 text-muted-foreground font-medium">Exchange Rate</th>
-                <th className="py-2 pr-4 text-muted-foreground font-medium">Amount INR</th>
-                <th className="py-2 pr-4 text-muted-foreground font-medium">Tax Type</th>
-                <th className="py-2 text-muted-foreground font-medium">Tax Rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.charge_line_items.map((item, i) => (
-                <tr key={i} className="border-b border-border/50">
-                  <td className="py-2 pr-4">
-                    <div className="flex items-center gap-1.5">
-                      {item.description.value}
-                      {showConfidence && <ConfidenceBadge confidence={item.description.confidence} />}
-                    </div>
-                  </td>
-                  <td className="py-2 pr-4">
-                    <div className="flex items-center gap-1.5">
-                      {item.amount_usd.value}
-                      {showConfidence && <ConfidenceBadge confidence={item.amount_usd.confidence} />}
-                    </div>
-                  </td>
-                  <td className="py-2 pr-4">
-                    <div className="flex items-center gap-1.5">
-                      {item.exchange_rate.value}
-                      {showConfidence && <ConfidenceBadge confidence={item.exchange_rate.confidence} />}
-                    </div>
-                  </td>
-                  <td className="py-2 pr-4">
-                    <div className="flex items-center gap-1.5">
-                      {item.amount_inr.value}
-                      {showConfidence && <ConfidenceBadge confidence={item.amount_inr.confidence} />}
-                    </div>
-                  </td>
-                  <td className="py-2 pr-4">
-                    <div className="flex items-center gap-1.5">
-                      {item.tax_type.value}
-                      {showConfidence && <ConfidenceBadge confidence={item.tax_type.confidence} />}
-                    </div>
-                  </td>
-                  <td className="py-2">
-                    <div className="flex items-center gap-1.5">
-                      {item.tax_rate.value}
-                      {showConfidence && <ConfidenceBadge confidence={item.tax_rate.confidence} />}
-                    </div>
-                  </td>
+        {data.charge_line_items.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic py-4">No charge line items found in this invoice.</p>
+        ) : (
+          <div className="overflow-x-auto rounded border border-border">
+            <p className="text-xs text-muted-foreground px-3 pt-2 pb-1">← Scroll to see all columns</p>
+            <table className="w-full text-sm min-w-[640px]">
+              <thead>
+                <tr className="border-b border-border text-left bg-secondary">
+                  <th className="py-2 px-3 text-muted-foreground font-medium">Description</th>
+                  <th className="py-2 px-3 text-muted-foreground font-medium">Amount USD</th>
+                  <th className="py-2 px-3 text-muted-foreground font-medium">Exchange Rate</th>
+                  <th className="py-2 px-3 text-muted-foreground font-medium">Amount INR</th>
+                  <th className="py-2 px-3 text-muted-foreground font-medium">Tax Type</th>
+                  <th className="py-2 px-3 text-muted-foreground font-medium">Tax Rate</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {data.charge_line_items.map((item, i) => (
+                  <tr key={i} className="border-b border-border/50 hover:bg-secondary/50">
+                    <td className="py-2 px-3">
+                      <div className="flex items-center gap-1.5">
+                        {item.description.value || <span className="text-xs text-muted-foreground italic">—</span>}
+                        {showConfidence && <ConfidenceBadge confidence={item.description.confidence} />}
+                      </div>
+                    </td>
+                    <td className="py-2 px-3">
+                      <div className="flex items-center gap-1.5">
+                        {item.amount_usd.value || <span className="text-xs text-muted-foreground italic">—</span>}
+                        {showConfidence && <ConfidenceBadge confidence={item.amount_usd.confidence} />}
+                      </div>
+                    </td>
+                    <td className="py-2 px-3">
+                      <div className="flex items-center gap-1.5">
+                        {item.exchange_rate.value || <span className="text-xs text-muted-foreground italic">—</span>}
+                        {showConfidence && <ConfidenceBadge confidence={item.exchange_rate.confidence} />}
+                      </div>
+                    </td>
+                    <td className="py-2 px-3">
+                      <div className="flex items-center gap-1.5">
+                        {item.amount_inr.value || <span className="text-xs text-muted-foreground italic">—</span>}
+                        {showConfidence && <ConfidenceBadge confidence={item.amount_inr.confidence} />}
+                      </div>
+                    </td>
+                    <td className="py-2 px-3">
+                      <div className="flex items-center gap-1.5">
+                        {item.tax_type.value || <span className="text-xs text-muted-foreground italic">—</span>}
+                        {showConfidence && <ConfidenceBadge confidence={item.tax_type.confidence} />}
+                      </div>
+                    </td>
+                    <td className="py-2 px-3">
+                      <div className="flex items-center gap-1.5">
+                        {item.tax_rate.value || <span className="text-xs text-muted-foreground italic">—</span>}
+                        {showConfidence && <ConfidenceBadge confidence={item.tax_rate.confidence} />}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Section>
 
       {/* Totals */}
@@ -177,55 +186,18 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
           { label: "Total Tax INR", value: data.total_tax_inr.value },
           { label: "Total Amount INR", value: data.total_amount_inr.value },
         ].map((t) => (
-          <div key={t.label} className="bg-primary text-primary-foreground rounded-lg p-4 text-center">
-            <p className="text-xs opacity-80">{t.label}</p>
-            <p className="text-lg font-bold">{t.value || "—"}</p>
+          <div key={t.label} className="bg-secondary border border-border rounded-lg p-4 text-center">
+            <p className="text-xs text-muted-foreground">{t.label}</p>
+            <p className="text-lg font-bold text-foreground mt-1">{t.value || "—"}</p>
           </div>
         ))}
       </div>
 
-      {/* Limitations */}
-      <div className="mt-8 border border-border rounded-lg">
-        <button
-          onClick={() => setLimOpen(!limOpen)}
-          className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-foreground"
-        >
-          Model Limitations & Production Recommendation
-          <ChevronDown className={`w-4 h-4 transition-transform ${limOpen ? "rotate-180" : ""}`} />
-        </button>
-        {limOpen && (
-          <div className="px-4 pb-4 text-sm text-muted-foreground space-y-3">
-            <p>
-              Gemini is a general-purpose LLM. While it performs well on structured extraction, it may hallucinate values or miss fields in complex layouts. For production workloads, we recommend <strong>Google Document AI Invoice Parser</strong>.
-            </p>
-            <table className="w-full text-xs border border-border rounded">
-              <thead>
-                <tr className="bg-secondary">
-                  <th className="p-2 text-left">Tier</th>
-                  <th className="p-2 text-left">Tool</th>
-                  <th className="p-2 text-left">Use Case</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-t border-border">
-                  <td className="p-2">1 (Primary)</td>
-                  <td className="p-2">Google Document AI Invoice Parser</td>
-                  <td className="p-2">Production extraction with high accuracy</td>
-                </tr>
-                <tr className="border-t border-border">
-                  <td className="p-2">2 (Fallback)</td>
-                  <td className="p-2">Gemini Vision (this tool)</td>
-                  <td className="p-2">Unsupported formats or second opinion</td>
-                </tr>
-                <tr className="border-t border-border">
-                  <td className="p-2">3 (Manual)</td>
-                  <td className="p-2">Human Review Queue</td>
-                  <td className="p-2">Low-confidence or flagged invoices</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        )}
+      {/* Upload another — bottom */}
+      <div className="mt-10 pt-6 border-t border-border flex justify-center">
+        <Button onClick={onReset} variant="outline" className="border-accent text-accent hover:bg-accent hover:text-accent-foreground px-8">
+          ↑ Upload another invoice
+        </Button>
       </div>
     </div>
   );

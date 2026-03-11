@@ -73,7 +73,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <HeaderBar />
       {result ? (
-        <InvoiceDashboard data={result} onReset={handleReset} />
+        <InvoiceDashboard data={result} fileName={file?.name} onReset={handleReset} />
       ) : (
         <div className="max-w-2xl mx-auto px-4">
           {isLoading && (
