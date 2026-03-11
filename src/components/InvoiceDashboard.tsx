@@ -3,7 +3,7 @@ import { getOverallConfidence, getExtractionStatus } from "@/types/invoice";
 import StatusBanner from "./StatusBanner";
 import FieldCard from "./FieldCard";
 import ConfidenceBadge from "./ConfidenceBadge";
-import { CheckCircle, XCircle, ChevronDown, Copy, Check } from "lucide-react";
+import { ChevronDown, Copy, Check } from "lucide-react";
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -27,12 +27,14 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
   const [showConfidence, setShowConfidence] = useState(false);
   const { copied: pageCopied, copy: copyPage } = useCopy();
   const overall = getOverallConfidence(data);
-  const status = getExtractionStatus(overall);
 
   const subtotal = parseFloat(data.subtotal_inr.value) || 0;
   const tax = parseFloat(data.total_tax_inr.value) || 0;
   const total = parseFloat(data.total_amount_inr.value) || 0;
-  const mathValid = Math.abs(subtotal + tax - total) < 0.01;
+  const mathValid = !subtotal || !total || Math.abs(subtotal + tax - total) < 0.01;
+  // Math failure silently pulls status to review minimum
+  const effectiveConfidence = !mathValid ? Math.min(overall, 89) : overall;
+  const status = getExtractionStatus(effectiveConfidence);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -169,7 +171,7 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
       </Section>
 
       {/* Totals */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+      <div className="grid grid-cols-3 gap-3 mt-6">
         {[
           { label: "Subtotal INR", value: data.subtotal_inr.value },
           { label: "Total Tax INR", value: data.total_tax_inr.value },
@@ -180,14 +182,6 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
             <p className="text-lg font-bold">{t.value || "—"}</p>
           </div>
         ))}
-        <div className="bg-primary text-primary-foreground rounded-lg p-4 text-center flex flex-col items-center justify-center">
-          <p className="text-xs opacity-80">Math Validation</p>
-          {mathValid ? (
-            <CheckCircle className="w-6 h-6 text-success mt-1" />
-          ) : (
-            <XCircle className="w-6 h-6 text-destructive mt-1" />
-          )}
-        </div>
       </div>
 
       {/* Limitations */}

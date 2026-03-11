@@ -19,21 +19,35 @@ const FieldCard = ({ label, field, showConfidence = false }: FieldCardProps) => 
     setTimeout(() => setCopied(false), 1500);
   };
 
+  const missing = !field.value;
+  const unavailable = missing && field.confidence === 0;
+  const needsCheck = missing && field.confidence > 0;
+
   return (
     <div className="bg-secondary rounded-md p-3 group">
       <div className="flex items-center justify-between mb-1">
         <p className="text-xs text-muted-foreground">{label}</p>
-        <button
-          onClick={handleCopy}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
-          title={`Copy ${label}`}
-        >
-          {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-        </button>
+        {!missing && (
+          <button
+            onClick={handleCopy}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+            title={`Copy ${label}`}
+          >
+            {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+          </button>
+        )}
       </div>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium text-foreground truncate">{field.value || "—"}</p>
-        {showConfidence && <ConfidenceBadge confidence={field.confidence} />}
+        {unavailable && (
+          <p className="text-xs text-muted-foreground italic">Data unavailable</p>
+        )}
+        {needsCheck && (
+          <p className="text-xs text-amber-600 font-medium">Manual check needed</p>
+        )}
+        {!missing && (
+          <p className="text-sm font-medium text-foreground truncate">{field.value}</p>
+        )}
+        {showConfidence && !missing && <ConfidenceBadge confidence={field.confidence} />}
       </div>
     </div>
   );
