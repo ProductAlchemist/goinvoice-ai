@@ -134,9 +134,9 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
         <div className="bg-primary text-primary-foreground rounded-lg p-4 text-center flex flex-col items-center justify-center">
           <p className="text-xs opacity-80">Math Validation</p>
           {mathValid ? (
-            <CheckCircle className="w-6 h-6 text-green-300 mt-1" />
+            <CheckCircle className="w-6 h-6 text-success mt-1" />
           ) : (
-            <XCircle className="w-6 h-6 text-red-300 mt-1" />
+            <XCircle className="w-6 h-6 text-destructive mt-1" />
           )}
         </div>
       </div>
