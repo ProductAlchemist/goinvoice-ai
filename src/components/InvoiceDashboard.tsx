@@ -3,7 +3,7 @@ import { getOverallConfidence, getExtractionStatus } from "@/types/invoice";
 import StatusBanner from "./StatusBanner";
 import FieldCard from "./FieldCard";
 import ConfidenceBadge from "./ConfidenceBadge";
-import { CheckCircle, XCircle, ChevronDown, Copy, Check, Eye, EyeOff } from "lucide-react";
+import { CheckCircle, XCircle, ChevronDown, Copy, Check } from "lucide-react";
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -39,27 +39,22 @@ const InvoiceDashboard = ({ data, onReset }: InvoiceDashboardProps) => {
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-foreground">Extraction Results</h2>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowConfidence(!showConfidence)}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            title="Toggle confidence scores"
-          >
-            {showConfidence ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            {showConfidence ? "Hide confidence" : "Show confidence"}
-          </button>
-          <button
-            onClick={() => copyPage(JSON.stringify(data, null, 2))}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            title="Copy full extraction as JSON"
-          >
-            {pageCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-            {pageCopied ? "Copied!" : "Copy all as JSON"}
-          </button>
-        </div>
+        <button
+          onClick={() => copyPage(JSON.stringify(data, null, 2))}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          title="Copy full extraction as JSON"
+        >
+          {pageCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+          {pageCopied ? "Copied!" : "Copy all as JSON"}
+        </button>
       </div>
 
-      <StatusBanner status={status} confidence={overall} />
+      <StatusBanner
+        status={status}
+        confidence={overall}
+        showConfidence={showConfidence}
+        onToggleConfidence={() => setShowConfidence(!showConfidence)}
+      />
 
       {/* Upload another — prominent, separated from header actions */}
       <div className="mt-4 mb-2">
