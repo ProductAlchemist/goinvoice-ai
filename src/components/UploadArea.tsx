@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface UploadAreaProps {
   onFileSelected: (file: File) => void;
@@ -146,9 +147,19 @@ const UploadArea = ({ onFileSelected, isLoading, onExtract, hasFile, fileName }:
       </div>
 
       <Button
-        onClick={onExtract}
-        disabled={!hasFile || isLoading}
-        className="w-full mt-5 bg-accent hover:bg-accent/90 text-accent-foreground font-semibold py-6 text-base"
+        onClick={() => {
+          if (!hasFile) {
+            toast.info("Upload an invoice first — drop a PDF or click the area above.");
+            return;
+          }
+          onExtract();
+        }}
+        disabled={isLoading}
+        className={`w-full mt-5 font-semibold py-6 text-base transition-colors ${
+          hasFile
+            ? "bg-accent hover:bg-accent/90 text-accent-foreground"
+            : "bg-muted text-muted-foreground cursor-pointer"
+        }`}
       >
         {isLoading ? "Extracting…" : "Extract Invoice Data"}
       </Button>
