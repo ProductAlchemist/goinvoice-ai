@@ -169,11 +169,15 @@ const InvoiceDashboard = ({ data, fileName, file, onReset }: InvoiceDashboardPro
             {file && (
               <button
                 onClick={() => setSplitView(!splitView)}
-                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                title="Toggle split view"
+                className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border transition-colors ${
+                  splitView
+                    ? "border-border text-muted-foreground hover:text-foreground"
+                    : "border-accent text-accent hover:bg-accent hover:text-accent-foreground"
+                }`}
+                title={splitView ? "Switch to full view" : "View PDF alongside extracted data"}
               >
                 {splitView ? <LayoutList className="w-4 h-4" /> : <Columns2 className="w-4 h-4" />}
-                {splitView ? "Full view" : "Split view"}
+                {splitView ? "Exit split view" : "View PDF side by side"}
               </button>
             )}
             <button
