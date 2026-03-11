@@ -60,7 +60,10 @@ const SailingAnimation = ({ message, progress }: { message: string; progress: nu
     </div>
 
     <div className="text-center space-y-1">
-      <p className="text-sm font-medium text-foreground">{message}</p>
+      <div className="flex items-center justify-center gap-2">
+        <p className="text-sm font-medium text-foreground">{message}</p>
+        <span className="text-sm font-semibold text-accent tabular-nums">{Math.round(progress)}%</span>
+      </div>
       <p className="text-xs text-muted-foreground">Please do not refresh or close this page</p>
     </div>
   </div>
