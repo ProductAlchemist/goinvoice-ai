@@ -2,9 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import HeaderBar from "@/components/HeaderBar";
 import UploadArea from "@/components/UploadArea";
 import InvoiceDashboard from "@/components/InvoiceDashboard";
+import LoginPage from "@/pages/LoginPage";
 import { extractInvoice } from "@/lib/gemini";
 import type { InvoiceData } from "@/types/invoice";
 import { toast } from "sonner";
+
+const SESSION_KEY = "gc_user";
 
 const STAGES = [
   { at: 0,  message: "Uploading invoice…" },
@@ -70,12 +73,27 @@ const SailingAnimation = ({ message, progress }: { message: string; progress: nu
 );
 
 const Index = () => {
+  const [userName, setUserName] = useState<string | null>(() => localStorage.getItem(SESSION_KEY));
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [progressMsg, setProgressMsg] = useState("");
   const [result, setResult] = useState<InvoiceData | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const handleLogin = (name: string) => {
+    localStorage.setItem(SESSION_KEY, name);
+    setUserName(name);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(SESSION_KEY);
+    setUserName(null);
+    setFile(null);
+    setResult(null);
+  };
+
+  if (!userName) return <LoginPage onLogin={handleLogin} />;
 
   useEffect(() => {
     if (isLoading) {
@@ -124,9 +142,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <HeaderBar />
+      <HeaderBar userName={userName} onLogout={handleLogout} />
       {result ? (
-        <InvoiceDashboard data={result} fileName={file?.name} file={file} onReset={handleReset} />
+        <InvoiceDashboard data={result} fileName={file?.name} file={file} onReset={handleReset} userName={userName} />
       ) : (
         <div className="max-w-2xl mx-auto px-4">
           {isLoading ? (
