@@ -49,6 +49,7 @@ const InvoiceDashboard = ({ data, fileName, file, onReset, userName }: InvoiceDa
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
   const { copied: pageCopied, copy: copyPage } = useCopy();
   const blobUrlRef = useRef<string | null>(null);
+  const extractionTimeRef = useRef<string>(new Date().toLocaleString());
 
   useEffect(() => {
     if (file) blobUrlRef.current = URL.createObjectURL(file);
@@ -77,54 +78,55 @@ const InvoiceDashboard = ({ data, fileName, file, onReset, userName }: InvoiceDa
   const status = getExtractionStatus(effectiveConfidence);
 
   const handleDownloadCSV = () => {
-    const summaryRows: string[][] = [
-      ["Field", "Extracted Value", "Confidence (%)"],
-      ["Invoice Number", v("invoice_number", data.invoice_number.value), String(data.invoice_number.confidence)],
-      ["Invoice Date", v("invoice_date", data.invoice_date.value), String(data.invoice_date.confidence)],
-      ["Invoice Type", v("invoice_type", data.invoice_type.value), String(data.invoice_type.confidence)],
-      ["Due Date", v("due_date", data.due_date.value), String(data.due_date.confidence)],
-      ["Payment Terms", v("payment_terms", data.payment_terms.value), String(data.payment_terms.confidence)],
-      ["Carrier Name", v("carrier_name", data.carrier_name.value), String(data.carrier_name.confidence)],
-      ["Carrier GSTIN", v("carrier_gstin", data.carrier_gstin.value), String(data.carrier_gstin.confidence)],
-      ["Shipment Number", v("shipment_number", data.shipment_number.value), String(data.shipment_number.confidence)],
-      ["Customer Name", v("customer_name", data.customer_name.value), String(data.customer_name.confidence)],
-      ["Customer GSTIN", v("customer_gstin", data.customer_gstin.value), String(data.customer_gstin.confidence)],
-      ["Customer PAN", v("customer_pan", data.customer_pan.value), String(data.customer_pan.confidence)],
-      ["Shipper", v("shipper", data.shipper.value), String(data.shipper.confidence)],
-      ["Consignee", v("consignee", data.consignee.value), String(data.consignee.confidence)],
-      ["Origin", v("origin", data.origin.value), String(data.origin.confidence)],
-      ["Destination", v("destination", data.destination.value), String(data.destination.confidence)],
-      ["ETD", v("etd", data.etd.value), String(data.etd.confidence)],
-      ["ETA", v("eta", data.eta.value), String(data.eta.confidence)],
-      ["Ocean Bill of Lading", v("ocean_bill_of_lading", data.ocean_bill_of_lading.value), String(data.ocean_bill_of_lading.confidence)],
-      ["House Bill of Lading", v("house_bill_of_lading", data.house_bill_of_lading.value), String(data.house_bill_of_lading.confidence)],
-      ["Goods Description", v("goods_description", data.goods_description.value), String(data.goods_description.confidence)],
-      ["Weight (kg)", v("weight_kg", data.weight_kg.value), String(data.weight_kg.confidence)],
-      ["Volume (m³)", v("volume_m3", data.volume_m3.value), String(data.volume_m3.confidence)],
-      ["Container Numbers", v("container_numbers", data.container_numbers.value), String(data.container_numbers.confidence)],
-      ["Subtotal INR", v("subtotal_inr", data.subtotal_inr.value), String(data.subtotal_inr.confidence)],
-      ["Total Tax INR", v("total_tax_inr", data.total_tax_inr.value), String(data.total_tax_inr.confidence)],
-      ["Total Amount INR", v("total_amount_inr", data.total_amount_inr.value), String(data.total_amount_inr.confidence)],
+    // All invoice fields as columns (wide format)
+    const FIELDS: Array<{ key: string; label: string; orig: string }> = [
+      { key: "invoice_number", label: "invoice_number", orig: data.invoice_number.value },
+      { key: "invoice_date", label: "invoice_date", orig: data.invoice_date.value },
+      { key: "invoice_type", label: "invoice_type", orig: data.invoice_type.value },
+      { key: "due_date", label: "due_date", orig: data.due_date.value },
+      { key: "payment_terms", label: "payment_terms", orig: data.payment_terms.value },
+      { key: "carrier_name", label: "carrier_name", orig: data.carrier_name.value },
+      { key: "carrier_gstin", label: "carrier_gstin", orig: data.carrier_gstin.value },
+      { key: "shipment_number", label: "shipment_number", orig: data.shipment_number.value },
+      { key: "customer_name", label: "customer_name", orig: data.customer_name.value },
+      { key: "customer_gstin", label: "customer_gstin", orig: data.customer_gstin.value },
+      { key: "customer_pan", label: "customer_pan", orig: data.customer_pan.value },
+      { key: "shipper", label: "shipper", orig: data.shipper.value },
+      { key: "consignee", label: "consignee", orig: data.consignee.value },
+      { key: "origin", label: "origin", orig: data.origin.value },
+      { key: "destination", label: "destination", orig: data.destination.value },
+      { key: "etd", label: "etd", orig: data.etd.value },
+      { key: "eta", label: "eta", orig: data.eta.value },
+      { key: "ocean_bill_of_lading", label: "ocean_bill_of_lading", orig: data.ocean_bill_of_lading.value },
+      { key: "house_bill_of_lading", label: "house_bill_of_lading", orig: data.house_bill_of_lading.value },
+      { key: "goods_description", label: "goods_description", orig: data.goods_description.value },
+      { key: "weight_kg", label: "weight_kg", orig: data.weight_kg.value },
+      { key: "volume_m3", label: "volume_m3", orig: data.volume_m3.value },
+      { key: "container_numbers", label: "container_numbers", orig: data.container_numbers.value },
+      { key: "subtotal_inr", label: "subtotal_inr", orig: data.subtotal_inr.value },
+      { key: "total_tax_inr", label: "total_tax_inr", orig: data.total_tax_inr.value },
+      { key: "total_amount_inr", label: "total_amount_inr", orig: data.total_amount_inr.value },
     ];
 
-    const lineItemRows: string[][] = [
-      [],
-      ["Charge Line Items"],
-      ["Description", "Amount USD", "Exchange Rate", "Amount INR", "Tax Type", "Tax Rate"],
-      ...data.charge_line_items.map(item => [
-        item.description.value, item.amount_usd.value, item.exchange_rate.value,
-        item.amount_inr.value, item.tax_type.value, item.tax_rate.value,
-      ]),
-    ];
+    const headers = [...FIELDS.map(f => f.label), "action_type", "actioned_by", "actioned_at"];
 
-    const auditRows: string[][] = auditLog.length > 0 ? [
-      [],
-      ["Edit Audit Trail"],
-      ["Field", "Original Value", "Corrected Value", "Edited By", "Timestamp"],
-      ...auditLog.map(e => [e.field, e.original, e.corrected, e.editedBy, e.timestamp]),
-    ] : [];
+    // Row 1: original OCR extraction
+    const ocrValues: Record<string, string> = {};
+    FIELDS.forEach(f => { ocrValues[f.key] = f.orig; });
 
-    downloadCSV([...summaryRows, ...lineItemRows, ...auditRows], `${fileName ?? "invoice"}.csv`);
+    const buildRow = (vals: Record<string, string>, actionType: string, actionedBy: string, actionedAt: string) =>
+      [...FIELDS.map(f => vals[f.key] ?? ""), actionType, actionedBy, actionedAt];
+
+    const rows: string[][] = [headers, buildRow(ocrValues, "ocr", "system", extractionTimeRef.current)];
+
+    // Subsequent rows: replay each edit, show full state at that moment
+    const running = { ...ocrValues };
+    for (const entry of auditLog) {
+      running[entry.field] = entry.corrected;
+      rows.push(buildRow({ ...running }, "manual", entry.editedBy, entry.timestamp));
+    }
+
+    downloadCSV(rows, `${fileName ?? "invoice"}.csv`);
   };
 
   const fc = (key: string, field: { value: string; confidence: number }, label: string) => (
@@ -285,25 +287,22 @@ const InvoiceDashboard = ({ data, fileName, file, onReset, userName }: InvoiceDa
       {/* Header */}
       <div className="max-w-7xl mx-auto w-full px-4 pt-8 pb-4">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div>
-              <h2 className="text-xl font-bold text-foreground">Extraction Results</h2>
-              {fileName && <p className="text-xs text-muted-foreground mt-0.5">{fileName}</p>}
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Extraction Results</h2>
+            <div className="flex items-center gap-2 mt-0.5">
+              {fileName && <p className="text-xs text-muted-foreground">{fileName}</p>}
+              {file && fileName && <span className="text-xs text-muted-foreground">·</span>}
+              {file && (
+                <button
+                  onClick={() => setSplitView(!splitView)}
+                  className="flex items-center gap-1 text-xs text-accent hover:underline transition-colors"
+                  title={splitView ? "Exit split view" : "View original PDF"}
+                >
+                  {splitView ? <LayoutList className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+                  {splitView ? "Exit PDF view" : "View PDF"}
+                </button>
+              )}
             </div>
-            {file && (
-              <button
-                onClick={() => setSplitView(!splitView)}
-                className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded border transition-colors ${
-                  splitView
-                    ? "border-border text-muted-foreground hover:text-foreground"
-                    : "border-accent text-accent hover:bg-accent hover:text-accent-foreground"
-                }`}
-                title={splitView ? "Exit split view" : "View original PDF"}
-              >
-                {splitView ? <LayoutList className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}
-                {splitView ? "Exit" : "View PDF"}
-              </button>
-            )}
           </div>
           <div className="flex items-center gap-3">
             <button

@@ -69,14 +69,17 @@ const FieldCard = ({ label, field, showConfidence = false, displayValue, isEdite
 
       <div className="flex items-center justify-between gap-2">
         {editing ? (
-          <input
-            autoFocus
-            value={editInput}
-            onChange={e => setEditInput(e.target.value)}
-            onBlur={commitEdit}
-            onKeyDown={handleKeyDown}
-            className="text-sm font-medium text-foreground bg-background border border-ring rounded px-2 py-0.5 w-full focus:outline-none"
-          />
+          <div className="w-full space-y-1">
+            <input
+              autoFocus
+              value={editInput}
+              onChange={e => setEditInput(e.target.value)}
+              onBlur={commitEdit}
+              onKeyDown={handleKeyDown}
+              className="text-sm font-medium text-foreground bg-background border border-ring rounded px-2 py-0.5 w-full focus:outline-none"
+            />
+            <p className="text-xs text-muted-foreground">Enter to save · Esc to cancel</p>
+          </div>
         ) : (
           <>
             {unavailable && <p className="text-xs text-muted-foreground italic">Data unavailable</p>}
