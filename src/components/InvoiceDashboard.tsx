@@ -3,7 +3,7 @@ import { getOverallConfidence, getExtractionStatus } from "@/types/invoice";
 import StatusBanner from "./StatusBanner";
 import FieldCard from "./FieldCard";
 import ConfidenceBadge from "./ConfidenceBadge";
-import { Copy, Check, Columns2, LayoutList } from "lucide-react";
+import { Copy, Check, Columns2, LayoutList, FileText, Download } from "lucide-react";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -22,9 +22,19 @@ interface InvoiceDashboardProps {
   fileName?: string;
   file?: File | null;
   onReset: () => void;
+  userName?: string | null;
 }
 
-const InvoiceDashboard = ({ data, fileName, file, onReset }: InvoiceDashboardProps) => {
+function downloadCSV(rows: string[][], filename: string) {
+  const csv = rows.map(r => r.map(cell => `"${(cell ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+const InvoiceDashboard = ({ data, fileName, file, onReset, userName }: InvoiceDashboardProps) => {
   const [showConfidence, setShowConfidence] = useState(false);
   const [splitView, setSplitView] = useState(false);
   const { copied: pageCopied, copy: copyPage } = useCopy();
@@ -38,6 +48,50 @@ const InvoiceDashboard = ({ data, fileName, file, onReset }: InvoiceDashboardPro
       if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
     };
   }, [file]);
+  const handleDownloadSummaryCSV = () => {
+    const rows = [
+      ["Field", "Extracted Value", "Confidence (%)"],
+      ["Invoice Number", data.invoice_number.value, String(data.invoice_number.confidence)],
+      ["Invoice Date", data.invoice_date.value, String(data.invoice_date.confidence)],
+      ["Invoice Type", data.invoice_type.value, String(data.invoice_type.confidence)],
+      ["Due Date", data.due_date.value, String(data.due_date.confidence)],
+      ["Payment Terms", data.payment_terms.value, String(data.payment_terms.confidence)],
+      ["Carrier Name", data.carrier_name.value, String(data.carrier_name.confidence)],
+      ["Carrier GSTIN", data.carrier_gstin.value, String(data.carrier_gstin.confidence)],
+      ["Shipment Number", data.shipment_number.value, String(data.shipment_number.confidence)],
+      ["Customer Name", data.customer_name.value, String(data.customer_name.confidence)],
+      ["Customer GSTIN", data.customer_gstin.value, String(data.customer_gstin.confidence)],
+      ["Customer PAN", data.customer_pan.value, String(data.customer_pan.confidence)],
+      ["Shipper", data.shipper.value, String(data.shipper.confidence)],
+      ["Consignee", data.consignee.value, String(data.consignee.confidence)],
+      ["Origin", data.origin.value, String(data.origin.confidence)],
+      ["Destination", data.destination.value, String(data.destination.confidence)],
+      ["ETD", data.etd.value, String(data.etd.confidence)],
+      ["ETA", data.eta.value, String(data.eta.confidence)],
+      ["Ocean Bill of Lading", data.ocean_bill_of_lading.value, String(data.ocean_bill_of_lading.confidence)],
+      ["House Bill of Lading", data.house_bill_of_lading.value, String(data.house_bill_of_lading.confidence)],
+      ["Goods Description", data.goods_description.value, String(data.goods_description.confidence)],
+      ["Weight (kg)", data.weight_kg.value, String(data.weight_kg.confidence)],
+      ["Volume (m³)", data.volume_m3.value, String(data.volume_m3.confidence)],
+      ["Container Numbers", data.container_numbers.value, String(data.container_numbers.confidence)],
+      ["Subtotal INR", data.subtotal_inr.value, String(data.subtotal_inr.confidence)],
+      ["Total Tax INR", data.total_tax_inr.value, String(data.total_tax_inr.confidence)],
+      ["Total Amount INR", data.total_amount_inr.value, String(data.total_amount_inr.confidence)],
+    ];
+    downloadCSV(rows, `${fileName ?? "invoice"}-summary.csv`);
+  };
+
+  const handleDownloadLineItemsCSV = () => {
+    const rows = [
+      ["Description", "Amount USD", "Exchange Rate", "Amount INR", "Tax Type", "Tax Rate"],
+      ...data.charge_line_items.map(item => [
+        item.description.value, item.amount_usd.value, item.exchange_rate.value,
+        item.amount_inr.value, item.tax_type.value, item.tax_rate.value,
+      ]),
+    ];
+    downloadCSV(rows, `${fileName ?? "invoice"}-line-items.csv`);
+  };
+
   const overall = getOverallConfidence(data);
 
   const subtotal = parseFloat(data.subtotal_inr.value) || 0;
@@ -160,35 +214,53 @@ const InvoiceDashboard = ({ data, fileName, file, onReset }: InvoiceDashboardPro
     <div className="min-h-screen flex flex-col">
       {/* Header — always full width */}
       <div className="max-w-7xl mx-auto w-full px-4 pt-8 pb-4">
-        <div className="flex justify-between items-start">
+        {/* Title row */}
+        <div className="flex justify-between items-start mb-4">
           <div>
             <h2 className="text-xl font-bold text-foreground">Extraction Results</h2>
             {fileName && <p className="text-xs text-muted-foreground mt-0.5">{fileName}</p>}
           </div>
-          <div className="flex items-center gap-3">
-            {file && (
-              <button
-                onClick={() => setSplitView(!splitView)}
-                className={`flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border transition-colors ${
-                  splitView
-                    ? "border-border text-muted-foreground hover:text-foreground"
-                    : "border-accent text-accent hover:bg-accent hover:text-accent-foreground"
-                }`}
-                title={splitView ? "Switch to full view" : "View PDF alongside extracted data"}
-              >
-                {splitView ? <LayoutList className="w-4 h-4" /> : <Columns2 className="w-4 h-4" />}
-                {splitView ? "Exit split view" : "View PDF side by side"}
-              </button>
-            )}
+          <div className="flex items-center gap-2">
             <button
               onClick={() => copyPage(JSON.stringify(data, null, 2))}
               className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               {pageCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-              {pageCopied ? "Copied!" : "Copy all as JSON"}
+              {pageCopied ? "Copied!" : "Copy JSON"}
+            </button>
+            <button
+              onClick={handleDownloadSummaryCSV}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              title="Download summary as CSV"
+            >
+              <Download className="w-4 h-4" />
+              Summary CSV
+            </button>
+            <button
+              onClick={handleDownloadLineItemsCSV}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              title="Download line items as CSV"
+            >
+              <Download className="w-4 h-4" />
+              Line items CSV
             </button>
           </div>
         </div>
+
+        {/* View PDF — prominent action row */}
+        {file && (
+          <button
+            onClick={() => setSplitView(!splitView)}
+            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 font-medium text-sm transition-colors ${
+              splitView
+                ? "border-border text-muted-foreground hover:border-accent hover:text-accent"
+                : "border-accent text-accent hover:bg-accent hover:text-accent-foreground"
+            }`}
+          >
+            {splitView ? <LayoutList className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+            {splitView ? "Exit split view" : "View original PDF alongside extracted data"}
+          </button>
+        )}
       </div>
 
       {/* Body — split or full */}

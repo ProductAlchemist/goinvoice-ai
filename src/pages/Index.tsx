@@ -27,19 +27,8 @@ const SailingAnimation = ({ message, progress }: { message: string; progress: nu
         }
         .wave-sailing { animation: wave-sail 3s linear infinite; }
       `}</style>
-
-      {/* Sky */}
       <div className="absolute inset-0 bg-gradient-to-b from-sky-100 to-blue-200" />
-
-      {/* Ship — position tied to progress */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 20,
-          left: `calc(${progress}% - 38px)`,
-          transition: "left 0.5s ease-out",
-        }}
-      >
+      <div style={{ position: "absolute", bottom: 20, left: `calc(${progress}% - 38px)`, transition: "left 0.5s ease-out" }}>
         <div style={{ display: "flex", gap: 2, marginBottom: 2, justifyContent: "center" }}>
           <div style={{ width: 20, height: 11, background: "#f87171", borderRadius: 2, border: "1px solid #ef4444" }} />
           <div style={{ width: 20, height: 11, background: "#3b82f6", borderRadius: 2, border: "1px solid #2563eb" }} />
@@ -52,8 +41,6 @@ const SailingAnimation = ({ message, progress }: { message: string; progress: nu
         <div style={{ width: 76, height: 6, background: "#cbd5e1", borderRadius: 2, margin: "0 auto" }} />
         <div style={{ width: 68, height: 14, background: "#334155", borderBottomLeftRadius: 8, borderBottomRightRadius: 8, margin: "0 auto", clipPath: "polygon(4% 0%, 96% 0%, 100% 100%, 0% 100%)" }} />
       </div>
-
-      {/* Ocean */}
       <div className="absolute bottom-0 left-0 right-0 h-10 overflow-hidden">
         <svg className="wave-sailing absolute bottom-0" width="200%" height="40" viewBox="0 0 1440 40" preserveAspectRatio="none">
           <path d="M0,20 C120,6 240,34 360,20 C480,6 600,34 720,20 C840,6 960,34 1080,20 C1200,6 1320,34 1440,20 L1440,40 L0,40 Z" fill="#3b82f6" fillOpacity="0.35" />
@@ -61,7 +48,6 @@ const SailingAnimation = ({ message, progress }: { message: string; progress: nu
         </svg>
       </div>
     </div>
-
     <div className="text-center space-y-1">
       <div className="flex items-center justify-center gap-2">
         <p className="text-sm font-medium text-foreground">{message}</p>
@@ -81,20 +67,7 @@ const Index = () => {
   const [result, setResult] = useState<InvoiceData | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const handleLogin = (name: string) => {
-    localStorage.setItem(SESSION_KEY, name);
-    setUserName(name);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem(SESSION_KEY);
-    setUserName(null);
-    setFile(null);
-    setResult(null);
-  };
-
-  if (!userName) return <LoginPage onLogin={handleLogin} />;
-
+  // All hooks before any conditional return
   useEffect(() => {
     if (isLoading) {
       setProgress(0);
@@ -116,6 +89,18 @@ const Index = () => {
     }
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [isLoading]);
+
+  const handleLogin = (name: string) => {
+    localStorage.setItem(SESSION_KEY, name);
+    setUserName(name);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(SESSION_KEY);
+    setUserName(null);
+    setFile(null);
+    setResult(null);
+  };
 
   const handleExtract = async () => {
     if (!file) return;
@@ -139,6 +124,9 @@ const Index = () => {
     setFile(null);
     setResult(null);
   };
+
+  // Early return after all hooks
+  if (!userName) return <LoginPage onLogin={handleLogin} />;
 
   return (
     <div className="min-h-screen bg-background">
