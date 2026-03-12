@@ -20,10 +20,7 @@ const HeaderBar = ({ userName, onLogout }: HeaderBarProps) => (
 
       {userName && (
         <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-sm font-medium text-primary-foreground">{userName}</p>
-            <p className="text-xs text-primary-foreground/50">Edits recorded under your name</p>
-          </div>
+          <p className="text-sm font-medium text-primary-foreground">{userName}</p>
           <button
             onClick={onLogout}
             className="flex items-center gap-1.5 text-sm text-primary-foreground/60 hover:text-primary-foreground transition-colors"

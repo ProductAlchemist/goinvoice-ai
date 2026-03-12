@@ -24,11 +24,19 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="bg-primary px-6 py-3 shadow-sm">
+        <div className="flex items-center gap-3">
+          <img src="https://www.gocomet.com/website/static/images/logo/logo-blue.png" alt="GoComet" className="h-7 brightness-0 invert" />
+          <div className="h-5 w-px bg-white/20" />
+          <span className="text-sm font-medium text-white/80">Invoice OCR</span>
+        </div>
+      </header>
+      <div className="flex-1 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-foreground">GoInvoice OCR</h1>
-          <p className="text-sm text-muted-foreground mt-1">Sign in to continue</p>
+          <h1 className="text-2xl font-bold text-foreground">Sign in</h1>
+          <p className="text-sm text-muted-foreground mt-1">GoComet Invoice OCR</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -70,10 +78,9 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
           </Button>
         </form>
 
-        <p className="text-xs text-muted-foreground text-center mt-6">
-          Any edits you make to extracted data will be recorded under your name.
-        </p>
       </div>
+      </div>
+    </div>
     </div>
   );
 };

@@ -8,6 +8,8 @@ import type { InvoiceData } from "@/types/invoice";
 import { toast } from "sonner";
 
 const SESSION_KEY = "gc_user";
+const EXTRACT_COUNT_KEY = "gc_extract_count";
+const MAX_EXTRACTIONS = 10;
 
 const STAGES = [
   { at: 0,  message: "Uploading invoice…" },
@@ -104,6 +106,11 @@ const Index = () => {
 
   const handleExtract = async () => {
     if (!file) return;
+    const used = parseInt(localStorage.getItem(EXTRACT_COUNT_KEY) ?? "0", 10);
+    if (used >= MAX_EXTRACTIONS) {
+      toast.error(`Extraction limit reached (${MAX_EXTRACTIONS}). Thank you for testing the demo!`);
+      return;
+    }
     setIsLoading(true);
     try {
       const buffer = await file.arrayBuffer();
@@ -111,6 +118,7 @@ const Index = () => {
         new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), "")
       );
       const data = await extractInvoice("", base64);
+      localStorage.setItem(EXTRACT_COUNT_KEY, String(used + 1));
       setResult(data);
       toast.success("Invoice extracted successfully!");
     } catch (e: unknown) {
