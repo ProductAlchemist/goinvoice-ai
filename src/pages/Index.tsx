@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 const SESSION_KEY = "gc_user";
 const EXTRACT_COUNT_KEY = "gc_extract_count";
+
 const MAX_EXTRACTIONS = 10;
 
 const STAGES = [
