@@ -12,19 +12,19 @@
     --card-foreground: 220 30% 20%;
     --popover: 0 0% 100%;
     --popover-foreground: 220 30% 20%;
-    --primary: 220 66% 33%;
+    --primary: 219 72% 18%;       /* GoComet dark navy #0C214C */
     --primary-foreground: 0 0% 100%;
     --secondary: 220 20% 96%;
-    --secondary-foreground: 220 66% 33%;
+    --secondary-foreground: 219 72% 18%;
     --muted: 220 20% 96%;
     --muted-foreground: 220 10% 50%;
-    --accent: 22 89% 60%;
+    --accent: 224 100% 50%;       /* GoComet bright blue #0054FF */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 20% 90%;
-    --input: 220 20% 90%;
-    --ring: 220 66% 33%;
+    --border: 220 20% 88%;
+    --input: 220 20% 88%;
+    --ring: 224 100% 50%;
     --radius: 0.5rem;
 
     --success: 142 71% 45%;
